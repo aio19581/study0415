@@ -15,6 +15,7 @@ public class CalculatorServiceImpl implements CalculatorService {
             case MINUS -> a - b;
             case MULTIPLY -> a * b;
             case DIVIDE -> a / b;
+            case POWER -> (int)Math.pow(a,b);
         };
 
         return new Output(a, b, input.getOperator(), result);

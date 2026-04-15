@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.Exception.CustomException;
+import org.example.Exception.ExceptionType;
 import org.example.model.Input;
 import org.example.model.Operator;
 import org.example.model.Output;
@@ -29,9 +31,13 @@ public class Main {
 
             int menu;
             try {
-                menu = scanner.nextInt();
+                menu = validateInput(scanner);
             } catch (InputMismatchException e) {
-                System.out.println("숫자로 입력해주세요.\n");
+                System.out.println("숫자를 입력해주세요.\n");
+                scanner.nextLine();
+                continue;
+            } catch (CustomException e){
+                System.out.println(e.getMessage() + "\n");
                 scanner.nextLine();
                 continue;
             }
@@ -41,11 +47,19 @@ public class Main {
                 break;
             }
 
-            switch (menu) {
-                case 1 -> runCalculation(scanner, calculatorService, history);
-                case 2 -> printHistory(history);
-//                case 3 -> downloadCsv(history);
-                default -> System.out.println("1~4 사이의 숫자를 입력해주세요.");
+            try {
+                switch (menu) {
+                    case 1 -> runCalculation(scanner, calculatorService, history);
+                    case 2 -> printHistory(history);
+//                    case 3 -> downloadCsv(history);
+                    default -> System.out.println("1~4 사이의 숫자를 입력해주세요.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("숫자로 입력해주세요.");
+                scanner.nextLine();
+            } catch (CustomException e) {
+                System.out.println(e.getMessage());
+                scanner.nextLine();
             }
             System.out.println();
         }
@@ -56,17 +70,13 @@ public class Main {
     private static void runCalculation(Scanner scanner, CalculatorService service, History history) {
 
         System.out.print("첫 번째 숫자: ");
-        int a = scanner.nextInt();
+        int a = validateInput(scanner);
 
         System.out.print("연산자 (+, -, *, /): ");
-        String symbol = scanner.next();
-        Operator operator = Arrays.stream(Operator.values())
-                .filter(op -> op.getOperator().equals(symbol))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 연산자: " + symbol));
+        Operator operator = validateOperator(scanner.next());
 
         System.out.print("두 번째 숫자: ");
-        int b = scanner.nextInt();
+        int b = validateInput(scanner);
 
         Output output = service.calculate(new Input(a, b, operator));
         history.addHistory(output);
@@ -83,5 +93,22 @@ public class Main {
         for (int i = 0; i < list.size(); i++) {
             System.out.println((i + 1) + ". " + list.get(i).toString());
         }
+    }
+
+    //연산자 입력 검증
+    private static Operator validateOperator(String symbol) {
+        return Arrays.stream(Operator.values())
+                .filter(op -> op.getOperator().equals(symbol))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ExceptionType.INVALID_OPERATOR));
+    }
+
+    //숫자 입력 검증
+    private static int validateInput(Scanner scanner) {
+        long input = scanner.nextLong();
+        if (input > Integer.MAX_VALUE || input < Integer.MIN_VALUE) {
+            throw new CustomException(ExceptionType.INTEGER_OVERFLOW);
+        }
+        return (int) input;
     }
 }
